@@ -84,7 +84,7 @@ window.addEventListener('resize', () => {
 const typingText = document.getElementById('typingText');
 const subtitleText = document.getElementById('subtitleText');
 
-const mainText = "To the one who makes my heart skip a beat My laado";
+const mainText = "To the one who makes my heart skip a beat: Your Cupcake";
 const subtitle = "A love story written in the stars";
 
 let charIndex = 0;
@@ -293,34 +293,124 @@ function moveNoButton() {
 }
 
 // ===================================
-// BACKGROUND MUSIC TOGGLE
+// CHAPTER-BASED MUSIC SYSTEM
 // ===================================
 const musicToggle = document.getElementById('musicToggle');
-let isPlaying = false;
+const musicInfo = document.getElementById('musicInfo');
+const currentSongName = document.getElementById('currentSongName');
 
-// Note: You'll need to add an actual audio file for this to work
-// For now, this is a placeholder
-const audio = new Audio();
-// audio.src = 'path-to-your-music.mp3';
-audio.loop = true;
-audio.volume = 0.3;
+// Audio elements for each chapter
+const chapterAudios = {
+    1: document.getElementById('chapterAudio1'),
+    2: document.getElementById('chapterAudio2'),
+    3: document.getElementById('chapterAudio3'),
+    4: document.getElementById('chapterAudio4')
+};
 
+// Song names for each chapter (you can customize these)
+const songNames = {
+    1: "Before We Began - Chapter 1",
+    2: "When Silence Found a Voice - Chapter 2",
+    3: "Choosing Us - Chapter 3",
+    4: "Always - Chapter 4"
+};
+
+// Song file paths (you'll need to add your actual song files)
+const songPaths = {
+    1: "songs/chapter1.mp3.mpeg",
+    2: "songs/chapter2.mp3.mpeg",
+    3: "songs/chapter3.mp3.mpeg",
+    4: "songs/chapter4.mp3.mpeg"
+};
+
+// Set audio sources
+Object.keys(chapterAudios).forEach(chapter => {
+    chapterAudios[chapter].src = songPaths[chapter];
+    chapterAudios[chapter].volume = 0.4;
+});
+
+let musicEnabled = false;
+let currentChapter = null;
+
+// Toggle music on/off
 musicToggle.addEventListener('click', () => {
-    if (isPlaying) {
-        audio.pause();
-        musicToggle.classList.remove('playing');
-        isPlaying = false;
-    } else {
-        // audio.play(); // Uncomment when you add music file
-        musicToggle.classList.add('playing');
-        isPlaying = true;
+    musicEnabled = !musicEnabled;
 
-        // Show a message if no audio file is set
-        if (!audio.src || audio.src === window.location.href) {
-            console.log('Add your music file path to enable background music');
+    if (musicEnabled) {
+        musicToggle.classList.add('playing');
+        // Play the current chapter's music if we're in a chapter
+        if (currentChapter) {
+            playChapterMusic(currentChapter);
         }
+    } else {
+        musicToggle.classList.remove('playing');
+        // Stop all music
+        Object.values(chapterAudios).forEach(audio => {
+            audio.pause();
+            audio.currentTime = 0;
+        });
+        hideMusicInfo();
     }
 });
+
+// Function to play chapter music
+function playChapterMusic(chapterNum) {
+    if (!musicEnabled) return;
+
+    // Pause all other chapters
+    Object.keys(chapterAudios).forEach(chapter => {
+        if (parseInt(chapter) !== chapterNum) {
+            chapterAudios[chapter].pause();
+            chapterAudios[chapter].currentTime = 0;
+        }
+    });
+
+    // Play the current chapter's music
+    const audio = chapterAudios[chapterNum];
+    if (audio && audio.src) {
+        audio.play().catch(err => {
+            console.log('Audio playback failed:', err);
+        });
+
+        // Update music info display
+        currentSongName.textContent = songNames[chapterNum];
+        showMusicInfo();
+    }
+}
+
+// Function to show music info
+function showMusicInfo() {
+    musicInfo.classList.add('visible');
+}
+
+// Function to hide music info
+function hideMusicInfo() {
+    musicInfo.classList.remove('visible');
+}
+
+// Enhanced chapter observer to detect which chapter is in view
+const chapterMusicObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const chapterNum = parseInt(entry.target.dataset.chapter);
+            if (chapterNum && currentChapter !== chapterNum) {
+                currentChapter = chapterNum;
+                playChapterMusic(chapterNum);
+            }
+        }
+    });
+}, {
+    threshold: 0.5,  // Trigger when 50% of chapter is visible
+    rootMargin: '0px'
+});
+
+// Observe all chapters for music changes
+chapters.forEach(chapter => {
+    if (chapter.dataset.chapter) {
+        chapterMusicObserver.observe(chapter);
+    }
+});
+
 
 // ===================================
 // SMOOTH SCROLLING
